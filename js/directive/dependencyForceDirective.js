@@ -83,7 +83,7 @@ angular.module(__global.appName).directive("dependencyForce", function (coloruti
             });
         }
 
-        function createForce(minDistance, maxDistance) {
+        function createForce() {
             force = d3.layout.force()
                 .size([width, height])
                 .nodes(nodes)
@@ -175,9 +175,8 @@ angular.module(__global.appName).directive("dependencyForce", function (coloruti
         }
 
         function drawLinks() {
-            var oldLinks = d3.selectAll("line.link")[0].length;
-            var newLinks = force.links().length;
-            var i = 0;
+            var enterCtr = 0;
+            var exitCtr = 0;
 
             linksData = gLines.selectAll("line.link")
                 .data(force.links(), function (d) {
@@ -186,19 +185,25 @@ angular.module(__global.appName).directive("dependencyForce", function (coloruti
 
             linksData.enter()
                 .append("svg:line")
-                .attr("class", function(d) {
-                    i++;
-                    return "link";
-                })
-                .style("stroke-width", .5);
+                .attr("class", "link")
+                .style("stroke-width", .5)
+                .each(function() {
+                    enterCtr++;
+                });
+
+            linksData.exit()
+                .remove()
+                .each(function() {
+                    exitCtr++;
+                });
+
+            var updateCtr = d3.selectAll("line.link")[0].length;
 
             $timeout(function() {
-                scope.enter = i;
-                scope.old = oldLinks;
-                scope.new = newLinks;
+                scope.enterCtr = enterCtr;
+                scope.exitCtr = exitCtr;
+                scope.updateCtr = updateCtr;
             });
-
-            linksData.exit().remove();
         }
 
         function thresholdChanged() {
@@ -218,6 +223,10 @@ angular.module(__global.appName).directive("dependencyForce", function (coloruti
             initSvg(scope.forceId, scope.width, scope.height);
             createNodes();
             createLinks(Number.MAX_VALUE);
+            $timeout(function () {
+                console.dir(nodes);
+                console.dir(links);
+            }, 500);
             createForce();
             startForce();
             drawNodesAndTexts();
@@ -227,8 +236,10 @@ angular.module(__global.appName).directive("dependencyForce", function (coloruti
 
             scope.rangeMin = 0;
             scope.rangeMax = rangeScale.length - 1;
-            scope.rangeValue = 0;
+            scope.rangeValue = 5;
             scope.thresholdChanged = thresholdChanged;
+
+            $timeout(thresholdChanged);
         });
     }
 
